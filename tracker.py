@@ -2,11 +2,11 @@ import requests
 import time
 
 # global variables
-api_key = '1cb0aa8e-b434-48da-8cef-598681ddab8f'
-bot_token = '1517396279:AAFddinu0lIo1Ejzl-GQE1WFg0Q4J-b-5FQ'
-chat_id = '1621053059'
+api_key = *****************************
+bot_token = *****************************
+chat_id = **********
 bitcoin_threshold = 30000
-time_interval = 10 * 60  # API request interval in seconds
+time_interval = 5 * 300  # API request interval in seconds
 xrp_threshold = 0.30
 eth_threshold = 1150
 xlm_threshold = .30
@@ -122,7 +122,7 @@ def main():
 
 
         # Sends update for each coin every 30 minutes
-        if len(btc_price_list) >= 6:
+        if len(btc_price_list) >= 1:
             send_message(chat_id=chat_id, msg=btc_price_list)
             send_message(chat_id=chat_id, msg=xrp_price_list)
             send_message(chat_id=chat_id, msg=eth_price_list)
