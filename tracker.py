@@ -2,11 +2,11 @@ import requests
 import time
 
 # global variables
-api_key = '1cb0aa8e-b434-48da-8cef-598681ddab8f'
-bot_token = '1517396279:AAFddinu0lIo1Ejzl-GQE1WFg0Q4J-b-5FQ'
-chat_id = '1621053059'
-bitcoin_threshold = 30000
-time_interval = 10 * 60  # API request interval in seconds
+api_key = '**********************************'
+bot_token = '*******************************'
+chat_id = '********'
+bitcoin_threshold = 3000
+time_interval = 10 * 175  # API request every 15 minutes
 xrp_threshold = 0.30
 eth_threshold = 1150
 xlm_threshold = .30
@@ -27,14 +27,22 @@ xlm_threshold = .30
 
 
 def get_btc_price(price_data):
-
+    """
+    Gets the price of bitcoin from the JSON
+    :param price_data: JSON data
+    :return: BTC price
+    """
     # extract the bitcoin price from the json data
     btc_price = price_data['data'][0]
     return btc_price['quote']['USD']['price']
 
 
 def get_xlm_price(price_data):
-
+    """
+    Gets the price of Stellar Lumen
+    :param price_data: JSON Data
+    :return: XLM price
+    """
 
     # extract xlm price
     xlm_price = price_data['data'][10]
@@ -74,11 +82,26 @@ def send_message(chat_id, msg):
     requests.get(url)
 
 
+def price_change(coin_price: list):
+    """
+    Take a list of 2 prices and calculates how much it has changed
+    :param coin_price: Price list
+    :return: Price change
+    """
+
+
+    if len(coin_price) > 1:
+        return coin_price[0] - coin_price[1]
+
+    else:
+        return 0
+
 def main():
     btc_price_list = []
     xrp_price_list = []
     eth_price_list = []
     xlm_price_list = []
+    btc_change, xrp_change, eth_change, xlm_change = 0, 0, 0, 0
 
     # infinite loop
     while True:
@@ -94,6 +117,7 @@ def main():
         # BTC
         price = get_btc_price(response_json)
         btc_price_list.append(price)
+        btc_change = price_change(btc_price_list)
 
         # if the price falls below threshold, send immediate message
         if price < bitcoin_threshold:
@@ -102,6 +126,7 @@ def main():
         # XRP
         xrp_price = get_xrp_price(response_json)
         xrp_price_list.append(xrp_price)
+        xrp_change = price_change(xrp_price_list)
 
         if xrp_price < xrp_threshold:
             send_message(chat_id=chat_id, msg=f"XRP Price Drop Alert {xrp_price}")
@@ -109,6 +134,7 @@ def main():
         # ETH
         eth_price = get_eth_price(response_json)
         eth_price_list.append(eth_price)
+        eth_change = price_change(eth_price_list)
 
         if eth_price < eth_threshold:
             send_message(chat_id=chat_id, msg=f"ETH Price Drop Alert {eth_price}")
@@ -116,17 +142,19 @@ def main():
         # Stellar Lumens (XLM)
         xlm_price = get_xlm_price(response_json)
         xlm_price_list.append(xlm_price)
+        xlm_change = price_change(xlm_price_list)
 
         if xlm_price < xlm_threshold:
             send_message(chat_id=chat_id, msg=f"Stellar Lumen Price Drop Alert {xlm_price}")
 
 
         # Sends update for each coin every 30 minutes
-        if len(btc_price_list) >= 6:
-            send_message(chat_id=chat_id, msg=btc_price_list)
-            send_message(chat_id=chat_id, msg=xrp_price_list)
-            send_message(chat_id=chat_id, msg=eth_price_list)
-            send_message(chat_id=chat_id, msg=xrp_price_list)
+        if len(btc_price_list) >= 2:
+            send_message(chat_id=chat_id, msg=f"Bitcoin price: {btc_price_list[1]} **** Change amount: {btc_change}"
+                                              f"\nETH price: {eth_price_list[1]} **** Change amount: {eth_change}"
+                                              f"\nXLM price: {xlm_price_list[1]} **** Change amount: {xlm_change}"
+                                              f"\nXRP price: {xrp_price_list[1]} **** Change amount: {xrp_change}")
+
             # empty price list
             btc_price_list = []
             xrp_price_list = []
