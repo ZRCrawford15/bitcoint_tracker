@@ -91,10 +91,13 @@ def price_change(coin_price: list):
 
 
     if len(coin_price) > 1:
-        return coin_price[0] - coin_price[1]
+        return coin_price[1] - coin_price[0]
 
     else:
         return 0
+
+def format_decimal(coin_amount: int):
+    return "{:.2f}".format(coin_amount)
 
 def main():
     btc_price_list = []
@@ -150,10 +153,13 @@ def main():
 
         # Sends update for each coin every 30 minutes
         if len(btc_price_list) >= 2:
-            send_message(chat_id=chat_id, msg=f"Bitcoin price: {btc_price_list[1]} **** Change amount: {btc_change}"
-                                              f"\nETH price: {eth_price_list[1]} **** Change amount: {eth_change}"
-                                              f"\nXLM price: {xlm_price_list[1]} **** Change amount: {xlm_change}"
-                                              f"\nXRP price: {xrp_price_list[1]} **** Change amount: {xrp_change}")
+            formatted_btc = format_decimal(btc_price_list[1])
+            formatted_btc_change = format_decimal(btc_change)
+
+            send_message(chat_id=chat_id, msg=f"Bitcoin price: {formatted_btc} **** Change amount: {formatted_btc_change}"
+                                              f"\nETH price: {format_decimal(eth_price_list[1])} **** Change amount: {format_decimal(eth_change)}"
+                                              f"\nXLM price: {format_decimal(xlm_price_list[1])} **** Change amount: {format_decimal(xlm_change)}"
+                                              f"\nXRP price: {format_decimal(xrp_price_list[1])} **** Change amount: {format_decimal(xrp_change)}")
 
             # empty price list
             btc_price_list = []
