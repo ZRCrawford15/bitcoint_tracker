@@ -1,15 +1,17 @@
 import requests
 import time
+import json
 
 # global variables
-api_key = '**********************************'
-bot_token = '*******************************'
-chat_id = '********'
-bitcoin_threshold = 3000
+api_key = '************************************'
+bot_token = '**********************************'
+chat_id = '*******'
+BITCOIN_THRESHOLD = 3000
 time_interval = 10 * 175  # API request every 15 minutes
-xrp_threshold = 0.30
-eth_threshold = 1150
-xlm_threshold = .30
+XRP_THRESHOLD = 0.30
+ETH_THRESHOLD = 1150
+XLM_THRESHOLD = .30
+
 
 # def get_price_data():
 #     """
@@ -25,48 +27,68 @@ xlm_threshold = .30
 #     response_json = response.json()
 #     return response_json
 
+# def get_btc_price(price_data):
+#     """
+#     Gets the price of bitcoin from the JSON
+#     :param price_data: JSON data
+#     :return: BTC price
+#     """
+#     # extract the bitcoin price from the json data
+#     btc_price = price_data['data'][0]
+#     return btc_price['quote']['USD']['price'], btc_price['quote']['USD']['percent_change_1h']
 
-def get_btc_price(price_data):
-    """
-    Gets the price of bitcoin from the JSON
-    :param price_data: JSON data
-    :return: BTC price
-    """
-    # extract the bitcoin price from the json data
-    btc_price = price_data['data'][0]
-    return btc_price['quote']['USD']['price']
 
-
-def get_xlm_price(price_data):
+class Coin:
     """
-    Gets the price of Stellar Lumen
-    :param price_data: JSON Data
-    :return: XLM price
+    Class for a new coin
     """
 
-    # extract xlm price
-    xlm_price = price_data['data'][10]
-    return xlm_price['quote']['USD']['price']
+    def __init__(self, price_data, coin_name: str):
+        """
+        Creates a new coin object
+        :param coin_name: Name of coin `str`
+        """
+        self._coin_name = coin_name
+        self._value = 0
+        self._change_percentage = 0
+        self._price_data = price_data
+        self._dict_key = 0
 
 
-def get_eth_price(price_data):
-    """
-    Gets the price of ETH
-    :return: ETH Price
-    """
+    def get_dict_key(self, coin_name):
+        """
+        Value is the dictionary key for the coin
+        :param coin_name: `str` coin name
+        :return: Dictionary key
+        """
+        val = 0
+        try:
+            for coin in self._price_data['data']:
+                if coin['name'] == coin_name:
+                    self._dict_key = val
+                    return val
+                val += 1
 
-    eth_price = price_data['data'][1]
-    return eth_price['quote']['USD']['price']
+        except KeyError:
+            print("Coin not found")
+
+        return None
 
 
-def get_xrp_price(price_data):
-    """
-    Gets the price of XRP
-    :return: XRP Price
-    """
+    def get_coin_name(self):
+        return self._coin_name
 
-    xrp_price = price_data['data'][3]
-    return xrp_price['quote']['USD']['price']
+
+    def get_coin_value(self):
+        coin_value = self._price_data['data'][self._dict_key]
+        self._value = coin_value['quote']['USD']['price']
+        return self._value
+
+
+    def get_change_percentage(self):
+        coin_value = self._price_data['data'][self._dict_key]
+        self._change_percentage = coin_value['quote']['USD']['percent_change_1h']
+        return self._change_percentage
 
 
 def send_message(chat_id, msg):
@@ -89,22 +111,23 @@ def price_change(coin_price: list):
     :return: Price change
     """
 
-
     if len(coin_price) > 1:
         return coin_price[1] - coin_price[0]
 
     else:
         return 0
 
+
 def format_decimal(coin_amount: int):
-    return "{:.2f}".format(coin_amount)
+    return "{:.3f}".format(coin_amount)
+
 
 def main():
     btc_price_list = []
     xrp_price_list = []
     eth_price_list = []
     xlm_price_list = []
-    btc_change, xrp_change, eth_change, xlm_change = 0, 0, 0, 0
+    doge_price_list = []
 
     # infinite loop
     while True:
@@ -116,56 +139,44 @@ def main():
         response = requests.get(url, headers=headers)
         response_json = response.json()
 
+        # BitCoin
+        btc = Coin(response_json, "Bitcoin")
+        btc.get_dict_key("Bitcoin")
+        btc_price_list.append(btc.get_coin_value())
 
-        # BTC
-        price = get_btc_price(response_json)
-        btc_price_list.append(price)
-        btc_change = price_change(btc_price_list)
+        # Ethereum
+        eth = Coin(response_json, "Ethereum")
+        eth.get_dict_key("Ethereum")
+        eth_price_list.append(eth.get_coin_value())
 
-        # if the price falls below threshold, send immediate message
-        if price < bitcoin_threshold:
-            send_message(chat_id=chat_id, msg=f"BTC Price Drop Alert: {price}")
 
-        # XRP
-        xrp_price = get_xrp_price(response_json)
-        xrp_price_list.append(xrp_price)
-        xrp_change = price_change(xrp_price_list)
-
-        if xrp_price < xrp_threshold:
-            send_message(chat_id=chat_id, msg=f"XRP Price Drop Alert {xrp_price}")
-
-        # ETH
-        eth_price = get_eth_price(response_json)
-        eth_price_list.append(eth_price)
-        eth_change = price_change(eth_price_list)
-
-        if eth_price < eth_threshold:
-            send_message(chat_id=chat_id, msg=f"ETH Price Drop Alert {eth_price}")
-
-        # Stellar Lumens (XLM)
-        xlm_price = get_xlm_price(response_json)
-        xlm_price_list.append(xlm_price)
-        xlm_change = price_change(xlm_price_list)
-
-        if xlm_price < xlm_threshold:
-            send_message(chat_id=chat_id, msg=f"Stellar Lumen Price Drop Alert {xlm_price}")
-
+        # Stellar Lumen
+        xlm = Coin(response_json, "Stellar")
+        xlm.get_dict_key("Stellar")
+        xlm_price_list.append(xlm.get_coin_value())
+        # doge
+        doge = Coin(response_json, "Dogecoin")
+        doge.get_dict_key("Dogecoin")
+        doge_price_list.append(doge.get_coin_value())
 
         # Sends update for each coin every 30 minutes
-        if len(btc_price_list) >= 2:
-            formatted_btc = format_decimal(btc_price_list[1])
-            formatted_btc_change = format_decimal(btc_change)
+        if len(btc_price_list) >= 1:
+            send_message(chat_id=chat_id,
+                         msg=f"Bitcoin price: {format_decimal(btc.get_coin_value())} --- BTC changed {format_decimal(btc.get_change_percentage())}% in the last hour"
+                             f"\n\nETH price: {format_decimal(eth.get_coin_value())} --- ETH changed {format_decimal(eth.get_change_percentage())}% in the last hour"
+                             f"\n\nXLM price: {format_decimal(xlm.get_coin_value())} --- XLM changed {format_decimal(xlm.get_change_percentage())}% in the last hour"
+                             f"\n\nDoge price: {format_decimal(doge.get_coin_value())} --- Doge changed {format_decimal(doge.get_change_percentage())}% in the last hour")
 
-            send_message(chat_id=chat_id, msg=f"Bitcoin price: {formatted_btc} **** Change amount: {formatted_btc_change}"
-                                              f"\nETH price: {format_decimal(eth_price_list[1])} **** Change amount: {format_decimal(eth_change)}"
-                                              f"\nXLM price: {format_decimal(xlm_price_list[1])} **** Change amount: {format_decimal(xlm_change)}"
-                                              f"\nXRP price: {format_decimal(xrp_price_list[1])} **** Change amount: {format_decimal(xrp_change)}")
 
-            # empty price list
-            btc_price_list = []
-            xrp_price_list = []
-            eth_price_list = []
-            xlm_price_list = []
+        # # write data to JSON
+        data_dictionary = {'coins': [{'btc': btc_price_list},
+                                     {'eth': xrp_price_list},
+                                     {'xlm': eth_price_list},
+                                     {'xrp': xlm_price_list},
+                                     {'doge': doge_price_list}]}
+
+        with open("test_file.json", 'w') as file:
+            json.dump(data_dictionary, file)
 
         # fetch the price for every dash minutes
 
